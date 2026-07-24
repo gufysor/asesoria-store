@@ -1,0 +1,14 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+enum Role { CUSTOMER ADMIN SUPER_ADMIN }
+enum ProductType { PHYSICAL DIGITAL AMAZON_REQUEST }
+enum PaymentStatus { PENDING RECEIPT_RECEIVED CONFIRMED REJECTED }
+enum OrderStatus { PENDING PREPARING SHIPPED IN_TRANSIT DELIVERED CANCELLED }
+model User { id String @id @default(cuid()); name String; email String @unique; passwordHash String; role Role @default(CUSTOMER); createdAt DateTime @default(now()); sessions Session[]; orders Order[] }
+model Session { id String @id @default(cuid()); tokenHash String @unique; userId String; expiresAt DateTime; user User @relation(fields:[userId], references:[id], onDelete:Cascade) }
+model Category { id String @id @default(cuid()); name String @unique; slug String @unique; products Product[]; services Service[] }
+model Product { id String @id @default(cuid()); name String; slug String @unique; categoryId String; category Category @relation(fields:[categoryId], references:[id]); type ProductType; price Int?; stock Int?; published Boolean @default(false); orderItems OrderItem[] }
+model Service { id String @id @default(cuid()); name String; slug String @unique; categoryId String; category Category @relation(fields:[categoryId], references:[id]); description String }
+model Order { id String @id @default(cuid()); code String @unique; userId String?; customerName String; customerEmail String; total Int; paymentStatus PaymentStatus @default(PENDING); status OrderStatus @default(PENDING); user User? @relation(fields:[userId], references:[id]); items OrderItem[]; payment Payment? }
+model OrderItem { id String @id @default(cuid()); orderId String; productId String?; name String; quantity Int; unitPrice Int; order Order @relation(fields:[orderId], references:[id], onDelete:Cascade); product Product? @relation(fields:[productId], references:[id]) }
+model Payment { id String @id @default(cuid()); orderId String @unique; method String; status PaymentStatus @default(PENDING); receiptKey String?; reviewNote String?; order Order @relation(fields:[orderId], references:[id], onDelete:Cascade) }
